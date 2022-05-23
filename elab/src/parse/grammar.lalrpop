@@ -1,0 +1,46 @@
+use super::syntax::binding::*;
+use super::syntax::raw::Expr as R;
+use super::syntax::raw::*;
+
+grammar;
+
+pub Expr: Box<R> = {
+    AtomP,
+    LamP,
+    PiP,
+}
+
+// \ (x y z w: A) (a b c : B) => body
+LamP: Box<R> = {
+    "\\" <params:TeleMaybe> "=>" <body:Expr> => Box::new(
+        params.into_iter().rev().fold(body, |acc, (binders, dom)| {
+            binders.into_iter().rev().fold(acc, |ac, name| {
+                Box::new(Raw(
+                    RE::Lam {
+                        param: name,
+                        dom: dom.clone(),
+                        cod: ac,
+                    },
+                    SourcePos::none(),
+                ))
+            })
+        });
+    )
+}
+
+TeleMaybeP: TeleMaybe = ParamMaybe+
+
+ParamMaybeP: ParamMaybe = {
+    "(" <a:IDsP> ":" <b:ExprP> ")" => (a, Some(b)),
+    <a:ID> => (a, None)
+}
+
+
+AtomP: Conc = {
+    '(' Expr ')' => Box::new(<>),
+    ID => {
+        let var = Var::Unresolved()
+    }
+}
+
+IDsP: Vec<Name> = ID+
