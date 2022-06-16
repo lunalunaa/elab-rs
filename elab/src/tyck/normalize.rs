@@ -1,5 +1,5 @@
 use super::env::Context;
-use crate::syntax::{binding::Var, core::*};
+use crate::syntax::{binding::Var, core::*, generic::Param};
 use derive_new::new;
 
 #[derive(new, Debug)]
@@ -52,7 +52,7 @@ impl<'a> Normalizer<'a> {
         let mut sub = Subst::new();
         tele.iter()
             .zip(args_normal.iter())
-            .for_each(|((name, _), tm)| {
+            .for_each(|(Param(name, _), tm)| {
                 sub.insert(Var::Local(name.clone(), None), tm.clone());
             });
         sub

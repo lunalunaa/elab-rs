@@ -1,31 +1,22 @@
 use derive_new::new;
 
 use super::{
-    binding::{Name, Var},
+    binding::Var,
     core::CoreDef,
-    generic::{Def, ElabError, SourcePos, Syntax, WithPos},
+    generic::{Def, ElabError, Param, ParamMaybe, SourcePos, Syntax, WithPos},
 };
 
 pub type ConcDef = Def<Raw>;
+pub type ConcParam = Param<Raw>;
+pub type ConcParamMaybe = ParamMaybe<Raw>;
 
 #[allow(unused)]
 #[derive(Debug, Clone)]
 pub enum Expr {
     Ref(Var<Raw, CoreDef>),
-    Lam {
-        param: Name,
-        dom: Option<Box<Raw>>,
-        cod: Box<Raw>,
-    },
-    Pi {
-        param: Name,
-        dom: Box<Raw>,
-        cod: Box<Raw>,
-    },
-    App {
-        expr1: Box<Raw>,
-        expr2: Box<Raw>,
-    },
+    Lam(Box<ConcParamMaybe>, Box<Raw>),
+    Pi(Box<ConcParam>, Box<Raw>),
+    App(Box<Raw>, Box<Raw>),
     Univ,
     Error(ElabError),
 }

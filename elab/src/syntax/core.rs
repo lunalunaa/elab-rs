@@ -1,7 +1,9 @@
+use derive_new::new;
+
 use std::{collections::HashMap, rc::Weak};
 
 use super::{
-    binding::Var,
+    binding::{Name, Var},
     generic::{Arg, Args, Def, ElabError, Param, Syntax, Tele},
 };
 
@@ -22,30 +24,29 @@ impl CallTerm {
     pub fn make(expr: &Core, arg: CoreArg) -> Core {
         let expr = expr.clone();
         match expr.expr() {
-            Core::Lam { param, body } => {
-                let (name, tm) = *param.clone();
-                let body = body.clone();
+            Core::Lam(param, body) => {
+                let name = param.0.clone();
                 let local_var = CoreVar::new_local(name);
-                body.subst_local(local_var, tm)
+                body.as_ref().clone().subst_local(local_var, arg)
             }
             _ => Core::App(Box::new(expr), Box::new(arg)),
         }
     }
 }
 
+#[derive(Debug, Clone, new)]
+pub struct Renaming<'a> {
+    pub from: &'a Name,
+    pub to: &'a Name,
+}
+
 #[allow(unused)]
 #[derive(Debug, Clone)]
 pub enum Core {
     Ref(CoreVar),
-    Lam {
-        param: Box<CoreParam>,
-        body: Box<Core>,
-    },
+    Lam(Box<CoreParam>, Box<Core>),
     App(Box<Core>, Box<CoreArg>),
-    Pi {
-        tele: CoreTele,
-        cod: Box<Core>,
-    },
+    Pi(Box<CoreParam>, Box<Core>),
     Call(Box<CallTerm>),
     Univ,
     Error(ElabError),
@@ -62,14 +63,21 @@ impl Core {
         use Core::*;
         match self {
             Ref(a) => sub.get(&a).unwrap_or(&Ref(a)).clone(),
-            Lam { param: _, body } => body.do_subst(sub),
+            Lam(param, body) => body.do_subst(sub),
             App(a, b) => App(Box::new(a.do_subst(sub)), Box::new(b.do_subst(sub))),
-            Pi { tele, cod } => Pi {
-                tele,
-                cod: Box::new(cod.do_subst(sub)),
-            },
+            Pi(param, cod) => Pi(param, Box::new(cod.do_subst(sub))),
             misc => misc,
         }
+    }
+
+    pub fn rename_local(self, Renaming { from, to }: Renaming) -> Self {
+        let mut sub = Subst::new();
+        let (var, tm) = (
+            CoreVar::Local(from.clone(), None),
+            Core::Ref(CoreVar::Local(to.clone(), None)),
+        );
+        sub.insert(var, tm);
+        self.do_subst(&sub)
     }
 }
 

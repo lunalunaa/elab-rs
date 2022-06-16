@@ -1,12 +1,20 @@
+use std::collections::VecDeque;
+
 use super::binding::Name;
 use crate::pretty::Docable;
 
 use derive_new::new;
 
-pub type Param<T> = (Name, T);
-pub type Params<T> = (Vec<Name>, T);
-pub type ParamMaybe<T> = (Name, Option<T>);
-pub type ParamsMaybe<T> = (Vec<Name>, Option<T>);
+//pub type Param<T> = (Name, T);
+
+#[derive(Debug, Clone, new)]
+pub struct Param<T: Syntax>(pub Name, pub T);
+
+#[derive(Debug, Clone)]
+pub struct ParamMaybe<T: Syntax>(pub Name, pub Option<T>);
+
+pub type Params<T> = Vec<Param<T>>;
+pub type ParamsMaybe<T> = Vec<ParamMaybe<T>>;
 pub type Tele<T> = Vec<Param<T>>;
 pub type TelesMaybe<T> = Vec<ParamsMaybe<T>>;
 
@@ -25,7 +33,7 @@ pub trait WithPos: Syntax {
 
 #[allow(unused)]
 #[derive(Debug, Clone)]
-pub struct Def<T> {
+pub struct Def<T: Syntax> {
     pub name: Name,
     pub tele: Tele<T>,
     pub ty: T,

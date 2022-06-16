@@ -3,17 +3,19 @@ use std::hash::Hash;
 use std::rc::Weak;
 use uuid::Uuid;
 
+use super::generic::Syntax;
+
 #[allow(unused)]
 #[derive(Debug, Clone)]
-pub enum Var<T, D> {
-    Local(Name, Option<Box<T>>),
+pub enum Var<T: Syntax, D> {
+    Local(Name, Option<Weak<T>>),
     Global(Name, Weak<D>),
     Unresolved(Name),
     Unused,
     Meta(Name),
 }
 
-impl<T, D> PartialEq for Var<T, D> {
+impl<T: Syntax, D> PartialEq for Var<T, D> {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
             (Var::Local(name1, _), Var::Local(name2, _)) => name1 == name2,
@@ -26,9 +28,9 @@ impl<T, D> PartialEq for Var<T, D> {
     }
 }
 
-impl<T, D> Eq for Var<T, D> {}
+impl<T: Syntax, D> Eq for Var<T, D> {}
 
-impl<T, D> Hash for Var<T, D> {
+impl<T: Syntax, D> Hash for Var<T, D> {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         match self {
             Var::Local(name, _) => name.hash(state),
@@ -40,7 +42,7 @@ impl<T, D> Hash for Var<T, D> {
     }
 }
 
-impl<T, D> Var<T, D> {
+impl<T: Syntax, D> Var<T, D> {
     pub fn fresh_meta() -> Var<T, D> {
         Var::Meta(Name::fresh_id())
     }
@@ -63,6 +65,8 @@ impl PartialEq for Name {
         self.uuid == other.uuid
     }
 }
+
+impl Eq for Name {}
 
 impl Hash for Name {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
